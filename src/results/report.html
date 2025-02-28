@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Отчёт по обработке изображений</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin-bottom: 50px; }
+        .images { display: flex; gap: 20px; }
+        .image-block { text-align: center; }
+        .image-block img { max-width: 300px; border: 1px solid #ccc; }
+        .metrics { margin-top: 10px; font-family: monospace; font-size: 14px; }
+        hr { border: none; border-top: 1px solid #aaa; margin: 40px 0; }
+    </style>
+</head>
+<body>
+    <h1>Отчёт по обработке изображений</h1>
+<div class='section'>
+<h2>Изображение malignant (98).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_0_malignant (98).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_0_malignant (98).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_0_malignant (98).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0148, PSNR: 18.2948, SSIM: 0.7083, Entropy: 0.0298, Edge Intensity: 0.0918, BRISQUE: 16.7280</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0138, PSNR: 18.5979, SSIM: 0.7510, Entropy: 0.0405, Edge Intensity: 0.0626, BRISQUE: 14.9931</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение malignant (54).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_1_malignant (54).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_1_malignant (54).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_1_malignant (54).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0118, PSNR: 19.2794, SSIM: 0.7407, Entropy: 0.0029, Edge Intensity: 0.0827, BRISQUE: 23.5276</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0180, PSNR: 17.4540, SSIM: 0.8312, Entropy: 0.0000, Edge Intensity: 0.0472, BRISQUE: 24.6417</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение malignant (36).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_2_malignant (36).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_2_malignant (36).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_2_malignant (36).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0106, PSNR: 19.7284, SSIM: 0.7157, Entropy: 0.0027, Edge Intensity: 0.0538, BRISQUE: 21.9809</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0247, PSNR: 16.0652, SSIM: 0.6702, Entropy: 0.0067, Edge Intensity: 0.0344, BRISQUE: 19.7068</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение benign (169).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_3_benign (169).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_3_benign (169).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_3_benign (169).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0138, PSNR: 18.6150, SSIM: 0.7419, Entropy: 0.0067, Edge Intensity: 0.0877, BRISQUE: 34.4830</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0197, PSNR: 17.0600, SSIM: 0.8102, Entropy: 0.0079, Edge Intensity: 0.0520, BRISQUE: 33.2175</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение normal (28).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_4_normal (28).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_4_normal (28).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_4_normal (28).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0171, PSNR: 17.6594, SSIM: 0.6730, Entropy: 0.0029, Edge Intensity: 0.0826, BRISQUE: 27.4330</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0183, PSNR: 17.3720, SSIM: 0.7037, Entropy: 0.0005, Edge Intensity: 0.0591, BRISQUE: 24.9747</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение malignant (20).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_5_malignant (20).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_5_malignant (20).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_5_malignant (20).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0145, PSNR: 18.3911, SSIM: 0.6972, Entropy: 0.0025, Edge Intensity: 0.0865, BRISQUE: 27.4063</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0190, PSNR: 17.2204, SSIM: 0.7595, Entropy: 0.0005, Edge Intensity: 0.0544, BRISQUE: 27.5195</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение benign (27).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_6_benign (27).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_6_benign (27).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_6_benign (27).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0125, PSNR: 19.0424, SSIM: 0.7940, Entropy: 0.0071, Edge Intensity: 0.1033, BRISQUE: 38.3614</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0121, PSNR: 19.1643, SSIM: 0.9112, Entropy: 0.0069, Edge Intensity: 0.0576, BRISQUE: 39.8615</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение benign (19).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_7_benign (19).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_7_benign (19).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_7_benign (19).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0184, PSNR: 17.3509, SSIM: 0.7509, Entropy: 0.0020, Edge Intensity: 0.0928, BRISQUE: 34.3295</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0256, PSNR: 15.9209, SSIM: 0.8070, Entropy: 0.0014, Edge Intensity: 0.0561, BRISQUE: 36.2156</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение benign (87).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_8_benign (87).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_8_benign (87).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_8_benign (87).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0206, PSNR: 16.8600, SSIM: 0.7289, Entropy: 0.0018, Edge Intensity: 0.0917, BRISQUE: 30.2726</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0207, PSNR: 16.8485, SSIM: 0.7940, Entropy: 0.0003, Edge Intensity: 0.0586, BRISQUE: 29.4695</div>
+<hr>
+</div>
+<div class='section'>
+<h2>Изображение malignant (69).png</h2>
+<div class='images'>
+<div class='image-block'>
+<h3>Оригинал</h3>
+<img src='original_9_malignant (69).png' alt='Оригинал'>
+</div>
+<div class='image-block'>
+<h3>CLAHE</h3>
+<img src='clahe_9_malignant (69).png' alt='CLAHE'>
+</div>
+<div class='image-block'>
+<h3>Zero-DCE</h3>
+<img src='zero_dce_9_malignant (69).png' alt='Zero-DCE'>
+</div>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0138, PSNR: 18.5914, SSIM: 0.6345, Entropy: 0.0003, Edge Intensity: 0.0683, BRISQUE: 23.9371</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0177, PSNR: 17.5194, SSIM: 0.6616, Entropy: 0.0000, Edge Intensity: 0.0492, BRISQUE: 24.4052</div>
+<hr>
+</div>
+<div class='metrics'><strong>CLAHE</strong> - MSE: 0.0148, PSNR: 18.3813, SSIM: 0.7185, Entropy: 0.0059, Edge Intensity: 0.0841, BRISQUE: 27.8459</div>
+<div class='metrics'><strong>Zero-DCE</strong> - MSE: 0.0190, PSNR: 17.3223, SSIM: 0.7700, Entropy: 0.0065, Edge Intensity: 0.0531, BRISQUE: 27.5005</div>
+<hr>
+
+</body>
+</html>
