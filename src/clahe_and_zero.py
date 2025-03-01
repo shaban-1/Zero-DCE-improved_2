@@ -322,11 +322,11 @@ def generate_html_report(results, results_dir="results", report_filename="report
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Image Enhancement with Zero-DCE and CLAHE + Gamma Correction")
     parser.add_argument("--input_dir", type=str,
-                        default="C:/Users/sevda/PycharmProjects/Neural Network/Zero-DCE-improved_1/src/data/test_data/DICM/", #normal_maligant_benign_data
+                        default="./data/test_data/light", #normal_maligant_benign_data
                         help="Путь к директории с изображениями")
     parser.add_argument("--output_dir", type=str, default="results",
                         help="Путь для сохранения обработанных изображений")
-    parser.add_argument("--model_path", type=str, default="snapshots/Epoch3.pth", help="Путь к модели Zero-DCE")
+    parser.add_argument("--model_path", type=str, default="snapshots/Epoch49.pth", help="Путь к модели Zero-DCE")
 
     args = parser.parse_args()
     main(args.input_dir, args.output_dir, args.model_path)

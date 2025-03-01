@@ -24,7 +24,7 @@ class ZeroDCE:
     def calculate_gamma(self, img):
         current_brightness = np.mean(img)  # Средняя яркость
         gamma = self.target_brightness / (current_brightness + 1e-6)  # Избегаем деления на ноль
-        gamma = np.clip(gamma, 2.0, 0.8)  # Ограничиваем диапазон
+        gamma = 1.0  # Ограничиваем диапазон
         return gamma
 
     def enhance_image(self, image_path):
