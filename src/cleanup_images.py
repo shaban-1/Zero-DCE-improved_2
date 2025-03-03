@@ -1,21 +1,30 @@
 import os
 import re
 import shutil
+from tqdm import tqdm  # Импортируем tqdm
 
 def cleanup_generated_images(dark_output_dir, light_output_dir, train_output_data):
     benign_pattern = re.compile(r"^benign \(\d+\)\.(png|jpg|jpeg)$", re.IGNORECASE)
-    for folder in [dark_output_dir, light_output_dir, train_output_data]:
+
+    folders_to_clean = [dark_output_dir, light_output_dir, train_output_data]
+
+    for folder in folders_to_clean:
         if os.path.exists(folder):
-            for filename in os.listdir(folder):
+            files = os.listdir(folder)
+            print(f"Очистка папки: {folder}")
+
+            # Используем tqdm для отображения прогресса удаления файлов
+            for filename in tqdm(files, desc="Удаление файлов", unit="file"):
                 if not benign_pattern.match(filename):
                     file_path = os.path.join(folder, filename)
                     try:
                         os.remove(file_path)
-                        print(f"Удален файл: {file_path}")
+                        # tqdm уже выводит прогресс, поэтому не используем print здесь
                     except Exception as e:
                         print(f"Ошибка при удалении {file_path}: {e}")
         else:
             print(f"Папка {folder} не существует, пропуск.")
+
 
 if __name__ == "__main__":
     import argparse

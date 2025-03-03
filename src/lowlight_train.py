@@ -1,65 +1,81 @@
+import os
+import time
 import torch
 import torch.optim
-import os
 import argparse
+import numpy as np
+from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
+
 import dataloader
 import model
 import Myloss
-import numpy as np
-from torch.utils.tensorboard import SummaryWriter
+
 
 def weights_init(m):
     classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
+    if 'Conv' in classname:
         m.weight.data.normal_(0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
+    elif 'BatchNorm' in classname:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
+
 
 def train(config):
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
     DCE_net = model.enhance_net_nopool().cuda()
-
     DCE_net.apply(weights_init)
-    if config.load_pretrain == True:
+
+    if config.load_pretrain:
         DCE_net.load_state_dict(torch.load(config.pretrain_dir))
     train_dataset = dataloader.lowlight_loader(config.lowlight_images_path)
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.train_batch_size, shuffle=True,
                                                num_workers=config.num_workers, pin_memory=True)
-    criterion = Myloss.CustomLoss()
 
+    criterion = Myloss.CustomLoss()
     optimizer = torch.optim.Adam(DCE_net.parameters(), lr=config.lr, weight_decay=config.weight_decay)
 
     DCE_net.train()
     writer = SummaryWriter()
 
     for epoch in range(config.num_epochs):
-        print('Epoch ' + str(epoch + 1) + '/' + str(config.num_epochs))
+        start_time = time.time()  # Засекаем время начала эпохи
         loss_list = []
-        for iteration, img_lowlight in enumerate(train_loader):
 
+        print(f"\nEpoch {epoch + 1}/{config.num_epochs}:")
+        progress_bar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch + 1}", unit="batch")
+
+        for iteration, img_lowlight in progress_bar:
             img_lowlight = img_lowlight.cuda()
 
             enhanced_image_1, enhanced_image, A = DCE_net(img_lowlight)
-
             loss = criterion(enhanced_image, img_lowlight, A)
-
-            loss_list.append(loss.item())
 
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(DCE_net.parameters(), config.grad_clip_norm)
             optimizer.step()
 
-            if ((iteration + 1) % config.display_iter) == 0:
-                print("Loss at iteration", iteration + 1, ":", loss.item())
-            if ((iteration + 1) % config.snapshot_iter) == 0:
-                writer.add_scalar('Loss/train', loss, 500 * epoch + iteration + 1)
-                torch.save(DCE_net.state_dict(), config.snapshots_folder + "Epoch" + str(epoch + 1) + '.pth')
+            loss_list.append(loss.item())
 
-        writer.add_scalar('Loss/train-epoch-mean', np.mean(loss_list), epoch + 1)
+            # Обновляем информацию в прогресс-баре (текущий лосс)
+            progress_bar.set_postfix(loss=f"{loss.item():.4f}")
+
+            if (iteration + 1) % config.snapshot_iter == 0:
+                writer.add_scalar('Loss/train', loss, 500 * epoch + iteration + 1)
+                torch.save(DCE_net.state_dict(), os.path.join(config.snapshots_folder, f"Epoch{epoch + 1}.pth"))
+
+        avg_loss = np.mean(loss_list)  # Средний лосс за эпоху
+        epoch_time = time.time() - start_time  # Время выполнения эпохи
+        speed = len(train_loader) / epoch_time  # Скорость обработки (батчи/сек)
+
+        print(f"Epoch {epoch + 1} completed in {epoch_time:.2f}s ({speed:.2f} batches/sec), Avg Loss: {avg_loss:.4f}")
+
+        writer.add_scalar('Loss/train-epoch-mean', avg_loss, epoch + 1)
+
+    writer.close()
 
 
 if __name__ == "__main__":
@@ -71,10 +87,10 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--weight_decay', type=float, default=0.0001)
     parser.add_argument('--grad_clip_norm', type=float, default=0.1)
-    parser.add_argument('--num_epochs', type=int, default=50)
-    parser.add_argument('--train_batch_size', type=int, default=4)  # 8 => 4
+    parser.add_argument('--num_epochs', type=int, default=100)
+    parser.add_argument('--train_batch_size', type=int, default=8)
     parser.add_argument('--val_batch_size', type=int, default=4)
-    parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--display_iter', type=int, default=10)
     parser.add_argument('--snapshot_iter', type=int, default=10)
     parser.add_argument('--snapshots_folder', type=str, default="snapshots/")
