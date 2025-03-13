@@ -5,7 +5,8 @@ from PIL import Image as PILImage
 from model import enhance_net_nopool
 
 class ZeroDCE:
-    def __init__(self, model_path, target_brightness=128):
+    def __init__(self, model_path, target_brightness=128, device=None):
+        self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.load_model(model_path)
         self.target_brightness = target_brightness
 
@@ -16,27 +17,28 @@ class ZeroDCE:
         return cv2.LUT(img, gamma_table)
 
     def load_model(self, model_path):
-        model = enhance_net_nopool().cuda()
-        model.load_state_dict(torch.load(model_path))
+        model = enhance_net_nopool().to(self.device)
+        model.load_state_dict(torch.load(model_path, map_location=self.device))
         model.eval()
         return model
 
     def calculate_gamma(self, img):
-        current_brightness = np.mean(img)  # Средняя яркость
-        gamma = self.target_brightness / (current_brightness + 1e-6)  # Избегаем деления на ноль
-        gamma = 1.0  # Ограничиваем диапазон
+        current_brightness = np.mean(img)
+        gamma = self.target_brightness / (current_brightness + 1e-6)
+        gamma = 1.0
         return gamma
 
     def enhance_image(self, image_path):
         img = PILImage.open(image_path).convert('L')
         img = img.resize((256, 256), PILImage.LANCZOS)
         img = np.asarray(img, dtype=np.float32) / 255.0
-        img = torch.from_numpy(img).float().unsqueeze(0).unsqueeze(0).cuda()
+        img = torch.from_numpy(img).float().unsqueeze(0).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             enhanced_image, _, _ = self.model(img)
 
         enhanced_image = enhanced_image.squeeze().cpu().numpy()
+
         if enhanced_image.ndim == 3:
             enhanced_image = np.mean(enhanced_image, axis=0)  # RGB -> Grayscale
 

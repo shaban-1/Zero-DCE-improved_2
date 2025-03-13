@@ -2,6 +2,7 @@ from torchvision.models.vgg import vgg16
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class CustomLoss(nn.Module):
     def __init__(self):
@@ -21,76 +22,70 @@ class CustomLoss(nn.Module):
         loss_sa =  torch.mean(self.L_sa(enhanced_image))
         loss_cc = 2 * torch.mean(self.L_cc(enhanced_image))
         loss_percept = 2 * torch.mean(self.L_percept(enhanced_image))
-        #loss_entropy = 0.25 * self.L_entropy(F.log_softmax(enhanced_image, dim=1), F.softmax(img_lowlight, dim=1))
         loss = Loss_TV + loss_spa + loss_exp + loss_sa + loss_cc + loss_percept
         return loss
 
 
 class L_spa(nn.Module):
-
     def __init__(self):
         super(L_spa, self).__init__()
-        # print(1)kernel = torch.FloatTensor(kernel).unsqueeze(0).unsqueeze(0)
-        kernel_left = torch.FloatTensor( [[0,0,0],[-1,1,0],[0,0,0]]).cuda().unsqueeze(0).unsqueeze(0)
-        kernel_right = torch.FloatTensor( [[0,0,0],[0,1,-1],[0,0,0]]).cuda().unsqueeze(0).unsqueeze(0)
-        kernel_up = torch.FloatTensor( [[0,-1,0],[0,1, 0 ],[0,0,0]]).cuda().unsqueeze(0).unsqueeze(0)
-        kernel_down = torch.FloatTensor( [[0,0,0],[0,1, 0],[0,-1,0]]).cuda().unsqueeze(0).unsqueeze(0)
-        self.weight_left = nn.Parameter(data=kernel_left, requires_grad=False)
-        self.weight_right = nn.Parameter(data=kernel_right, requires_grad=False)
-        self.weight_up = nn.Parameter(data=kernel_up, requires_grad=False)
-        self.weight_down = nn.Parameter(data=kernel_down, requires_grad=False)
+        kernel_left = torch.FloatTensor([[0, 0, 0], [-1, 1, 0], [0, 0, 0]]).to(device).unsqueeze(0).unsqueeze(0)
+        kernel_right = torch.FloatTensor([[0, 0, 0], [0, 1, -1], [0, 0, 0]]).to(device).unsqueeze(0).unsqueeze(0)
+        kernel_up = torch.FloatTensor([[0, -1, 0], [0, 1, 0], [0, 0, 0]]).to(device).unsqueeze(0).unsqueeze(0)
+        kernel_down = torch.FloatTensor([[0, 0, 0], [0, 1, 0], [0, -1, 0]]).to(device).unsqueeze(0).unsqueeze(0)
+        self.weight_left = nn.Parameter(kernel_left, requires_grad=False)
+        self.weight_right = nn.Parameter(kernel_right, requires_grad=False)
+        self.weight_up = nn.Parameter(kernel_up, requires_grad=False)
+        self.weight_down = nn.Parameter(kernel_down, requires_grad=False)
         self.pool = nn.AvgPool2d(4)
 
-    def forward(self, org , enhance ):
-        b,c,h,w = org.shape
+    def forward(self, org, enhance):
+        org = org.to(device)
+        enhance = enhance.to(device)
 
-        org_mean = torch.mean(org,1,keepdim=True)
-        enhance_mean = torch.mean(enhance,1,keepdim=True)
+        org_mean = torch.mean(org, 1, keepdim=True)
+        enhance_mean = torch.mean(enhance, 1, keepdim=True)
 
-        org_pool =  self.pool(org_mean)
+        org_pool = self.pool(org_mean)
         enhance_pool = self.pool(enhance_mean)
 
-        weight_diff =torch.max(torch.FloatTensor([1]).cuda() + 10000*torch.min(org_pool - torch.FloatTensor([0.3]).cuda(),torch.FloatTensor([0]).cuda()),torch.FloatTensor([0.5]).cuda())
-        E_1 = torch.mul(torch.sign(enhance_pool - torch.FloatTensor([0.5]).cuda()) ,enhance_pool-org_pool)
+        weight_diff = torch.max(torch.FloatTensor([1]).to(device) + 10000 * torch.min(org_pool - torch.FloatTensor([0.3]).to(device),torch.FloatTensor([0]).to(device)),torch.FloatTensor([0.5]).to(device))
+        E_1 = torch.mul(torch.sign(enhance_pool - torch.FloatTensor([0.5]).to(device)), enhance_pool - org_pool)
 
-        D_org_letf = F.conv2d(org_pool , self.weight_left, padding=1)
-        D_org_right = F.conv2d(org_pool , self.weight_right, padding=1)
-        D_org_up = F.conv2d(org_pool , self.weight_up, padding=1)
-        D_org_down = F.conv2d(org_pool , self.weight_down, padding=1)
+        D_org_left = F.conv2d(org_pool, self.weight_left, padding=1)
+        D_org_right = F.conv2d(org_pool, self.weight_right, padding=1)
+        D_org_up = F.conv2d(org_pool, self.weight_up, padding=1)
+        D_org_down = F.conv2d(org_pool, self.weight_down, padding=1)
 
-        D_enhance_letf = F.conv2d(enhance_pool , self.weight_left, padding=1)
-        D_enhance_right = F.conv2d(enhance_pool , self.weight_right, padding=1)
-        D_enhance_up = F.conv2d(enhance_pool , self.weight_up, padding=1)
-        D_enhance_down = F.conv2d(enhance_pool , self.weight_down, padding=1)
+        D_enhance_left = F.conv2d(enhance_pool, self.weight_left, padding=1)
+        D_enhance_right = F.conv2d(enhance_pool, self.weight_right, padding=1)
+        D_enhance_up = F.conv2d(enhance_pool, self.weight_up, padding=1)
+        D_enhance_down = F.conv2d(enhance_pool, self.weight_down, padding=1)
 
-        D_left = torch.pow(D_org_letf - D_enhance_letf,2)
-        D_right = torch.pow(D_org_right - D_enhance_right,2)
-        D_up = torch.pow(D_org_up - D_enhance_up,2)
-        D_down = torch.pow(D_org_down - D_enhance_down,2)
-        E = (D_left + D_right + D_up +D_down)
-        # E = 25*(D_left + D_right + D_up +D_down)
+        D_left = torch.pow(D_org_left - D_enhance_left, 2)
+        D_right = torch.pow(D_org_right - D_enhance_right, 2)
+        D_up = torch.pow(D_org_up - D_enhance_up, 2)
+        D_down = torch.pow(D_org_down - D_enhance_down, 2)
+
+        E = D_left + D_right + D_up + D_down
         return E
 
 class L_exp(nn.Module):
-
-    def __init__(self,patch_size,mean_val):
+    def __init__(self, patch_size, mean_val):
         super(L_exp, self).__init__()
-        # print(1)
         self.pool = nn.AvgPool2d(patch_size)
         self.mean_val = mean_val
 
-    def forward(self, x ):
-        b,c,h,w = x.shape
-        x = torch.mean(x,1,keepdim=True)
-        mean = self.pool(x)
-        d = torch.mean(torch.pow(mean- torch.FloatTensor([self.mean_val] ).cuda(),2))
+    def forward(self, x):
+        x = x.to(device)
+        mean = self.pool(torch.mean(x, 1, keepdim=True))
+        d = torch.mean(torch.pow(mean - torch.FloatTensor([self.mean_val]).to(device), 2))
         return d
 
 
 class Exposure_control_loss(nn.Module):
     def __init__(self, patch_size, mean_val):
         super(Exposure_control_loss, self).__init__()
-        # print(1)
         self.pool = nn.AvgPool2d(patch_size)
         self.mean_val = mean_val
 
@@ -131,14 +126,13 @@ class L_TV(nn.Module):
         h_tv = torch.pow((x[:,:,1:,:]-x[:,:,:h_x-1,:]),2).sum()
         w_tv = torch.pow((x[:,:,:,1:]-x[:,:,:,:w_x-1]),2).sum()
         return self.TVLoss_weight*2*(h_tv/count_h+w_tv/count_w)/batch_size
+
 class Sa_Loss(nn.Module):
     def __init__(self):
         super(Sa_Loss, self).__init__()
 
     def forward(self, x ):
-        # self.grad = np.ones(x.shape,dtype=np.float32)
         b,c,h,w = x.shape
-        # x_de = x.cpu().detach().numpy()
         r,g,b = torch.split(x , 1, dim=1)
         mean_rgb = torch.mean(x,[2,3],keepdim=True)
         mr,mg, mb = torch.split(mean_rgb, 1, dim=1)
@@ -146,7 +140,6 @@ class Sa_Loss(nn.Module):
         Dg = g-mg
         Db = b-mb
         k =torch.pow( torch.pow(Dr,2) + torch.pow(Db,2) + torch.pow(Dg,2),0.5)
-        # print(k)
         k = torch.mean(k)
         return k
 
@@ -154,7 +147,7 @@ class perception_loss(nn.Module):
     def __init__(self):
         super(perception_loss, self).__init__()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        features = vgg16(pretrained=True).features.to(device)  # Переносим на GPU
+        features = vgg16(pretrained=True).features.to(device)
 
         self.to_relu_1_2 = nn.Sequential()
         self.to_relu_2_2 = nn.Sequential()
@@ -177,7 +170,7 @@ class perception_loss(nn.Module):
         self.device = device
 
     def forward(self, x):
-        x = x.to(self.device)  # Перемещаем входной тензор на тот же девайс
+        x = x.to(self.device)
         h = self.to_relu_1_2(x)
         h = self.to_relu_2_2(h)
         h = self.to_relu_3_3(h)

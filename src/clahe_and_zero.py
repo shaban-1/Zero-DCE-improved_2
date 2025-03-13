@@ -7,17 +7,20 @@ from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.filters import sobel
 import torch
 import piq
-
 from zeroDCE import ZeroDCE
+import matplotlib.pyplot as plt
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
+#region Вспомогательные функции
 # Вычисление BRISQUE
 def calculate_brisque(image):
     if isinstance(image, np.ndarray):
         image = np.clip(image, 0, 1)
     else:
         raise TypeError("Expected image to be a numpy array")
-    image_tensor = torch.from_numpy(image).float().unsqueeze(0).unsqueeze(0)
+    image_tensor = torch.from_numpy(image).float().unsqueeze(0).unsqueeze(0).to(device)
     return piq.brisque(image_tensor)
 
 
@@ -47,15 +50,23 @@ def calculate_metrics(original, enhanced):
     return mse, psnr_val, ssim_val, entropy_val, edge_intensity, brisque_val
 
 
-# Обработка изображений
+def save_histogram(image, filename):
+    plt.figure(figsize=(6, 4))
+    plt.hist(image.flatten(), bins=256, range=(0, 256), color='blue', alpha=0.7)
+    plt.title('Histogram')
+    plt.xlabel('Pixel Value')
+    plt.ylabel('Frequency')
+    plt.savefig(filename)
+    plt.close()
+#endregion
+
+
 def process_images(input_dir, model, max_images=10):
-    # Списки для хранения метрик
     clahe_mse_list, clahe_psnr_list, clahe_ssim_list = [], [], []
     clahe_entropy_list, clahe_edge_intensity_list, clahe_brisque_list = [], [], []
     zero_dce_mse_list, zero_dce_psnr_list, zero_dce_ssim_list = [], [], []
     zero_dce_entropy_list, zero_dce_edge_intensity_list, zero_dce_brisque_list = [], [], []
 
-    # Список для хранения данных всех изображений
     image_data_list = []
 
     image_count = 0
@@ -75,7 +86,7 @@ def process_images(input_dir, model, max_images=10):
             clahe_image = clahe.apply(original_resized)
             clahe_float = clahe_image.astype(np.float32) / 255.0
 
-            zero_dce = ZeroDCE(model_path=args.model_path)
+            zero_dce = ZeroDCE(model_path=args.model_path, device=device)
             zero_dce_image = zero_dce.enhance_image(image_path)
 
             # Метрики для CLAHE
@@ -98,7 +109,6 @@ def process_images(input_dir, model, max_images=10):
             zero_dce_edge_intensity_list.append(zero_dce_edge)
             zero_dce_brisque_list.append(zero_dce_brisque)
 
-            # Сохранение данных изображения вместе с метриками
             image_data_list.append({
                 "filename": filename,
                 "original_image": original_float,
@@ -123,7 +133,6 @@ def process_images(input_dir, model, max_images=10):
     zero_dce_brisque_list, image_data_list)
 
 
-# Сохранение всех изображений в папку results с выводом метрик
 def save_all_images(image_data_list, output_dir="results"):
     if os.path.exists(output_dir):
         for f in os.listdir(output_dir):
@@ -148,7 +157,6 @@ def save_all_images(image_data_list, output_dir="results"):
         cv2.imwrite(os.path.join(output_dir, clahe_filename), clahe_image)
         cv2.imwrite(os.path.join(output_dir, zero_dce_filename), zero_dce_image)
 
-        # Save histograms
         save_histogram(original_image, os.path.join(output_dir, f"hist_original_{idx}_{filename}.png"))
         save_histogram(clahe_image, os.path.join(output_dir, f"hist_clahe_{idx}_{filename}.png"))
         save_histogram(zero_dce_image, os.path.join(output_dir, f"hist_zero_dce_{idx}_{filename}.png"))
@@ -162,13 +170,10 @@ def save_all_images(image_data_list, output_dir="results"):
         print("-" * 50)
 
 
-
-# Основная функция
 def main(input_dir, output_dir, model_path):
-    zero_dce = ZeroDCE(model_path)
+    zero_dce = ZeroDCE(model_path, device=device)
 
-    (
-    clahe_mse_list, clahe_psnr_list, clahe_ssim_list, clahe_entropy_list, clahe_edge_intensity_list, clahe_brisque_list,
+    (clahe_mse_list, clahe_psnr_list, clahe_ssim_list, clahe_entropy_list, clahe_edge_intensity_list, clahe_brisque_list,
     zero_dce_mse_list, zero_dce_psnr_list, zero_dce_ssim_list, zero_dce_entropy_list, zero_dce_edge_intensity_list,
     zero_dce_brisque_list, image_data_list) = process_images(input_dir, zero_dce, max_images=10)
 
@@ -211,17 +216,6 @@ def main(input_dir, output_dir, model_path):
         "zero_dce_metrics": (zero_dce_avg_mse, zero_dce_avg_psnr, zero_dce_avg_ssim, zero_dce_avg_entropy, zero_dce_avg_edge_intensity, zero_dce_avg_brisque)
     })
     generate_html_report(results, results_dir=output_dir, report_filename="report.html")
-
-import matplotlib.pyplot as plt
-
-def save_histogram(image, filename):
-    plt.figure(figsize=(6, 4))
-    plt.hist(image.flatten(), bins=256, range=(0, 256), color='blue', alpha=0.7)
-    plt.title('Histogram')
-    plt.xlabel('Pixel Value')
-    plt.ylabel('Frequency')
-    plt.savefig(filename)
-    plt.close()
 
 
 def generate_html_report(results, results_dir="results", report_filename="report.html"):
@@ -302,10 +296,8 @@ def generate_html_report(results, results_dir="results", report_filename="report
                  f"<strong>Zero-DCE</strong> - MSE: {m[0]:.4f}, PSNR: {m[1]:.4f}, SSIM: {m[2]:.4f}, "
                  f"Entropy: {m[3]:.4f}, Edge Intensity: {m[4]:.4f}, BRISQUE: {m[5]:.4f}"
                  "</div>\n")
-
         html += "<hr>\n"
         html += "</div>\n"
-
     html += """
 </body>
 </html>
@@ -322,7 +314,7 @@ def generate_html_report(results, results_dir="results", report_filename="report
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Image Enhancement with Zero-DCE and CLAHE + Gamma Correction")
     parser.add_argument("--input_dir", type=str,
-                        default="./data/test_data/light", #normal_maligant_benign_data
+                        default="./data/test_data/normal", #normal_maligant_benign_data
                         help="Путь к директории с изображениями")
     parser.add_argument("--output_dir", type=str, default="results",
                         help="Путь для сохранения обработанных изображений")

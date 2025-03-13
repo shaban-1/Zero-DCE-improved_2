@@ -22,13 +22,14 @@ def weights_init(m):
 
 
 def train(config):
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
-    DCE_net = model.enhance_net_nopool().cuda()
+    DCE_net = model.enhance_net_nopool().to(device)
     DCE_net.apply(weights_init)
 
     if config.load_pretrain:
-        DCE_net.load_state_dict(torch.load(config.pretrain_dir))
+        DCE_net.load_state_dict(torch.load(config.pretrain_dir, map_location=device))
     train_dataset = dataloader.lowlight_loader(config.lowlight_images_path)
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.train_batch_size, shuffle=True,
@@ -41,14 +42,14 @@ def train(config):
     writer = SummaryWriter()
 
     for epoch in range(config.num_epochs):
-        start_time = time.time()  # Засекаем время начала эпохи
+        start_time = time.time()
         loss_list = []
 
         print(f"\nEpoch {epoch + 1}/{config.num_epochs}:")
         progress_bar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch + 1}", unit="batch")
 
         for iteration, img_lowlight in progress_bar:
-            img_lowlight = img_lowlight.cuda()
+            img_lowlight = img_lowlight.to(device)
 
             enhanced_image_1, enhanced_image, A = DCE_net(img_lowlight)
             loss = criterion(enhanced_image, img_lowlight, A)
@@ -60,16 +61,15 @@ def train(config):
 
             loss_list.append(loss.item())
 
-            # Обновляем информацию в прогресс-баре (текущий лосс)
             progress_bar.set_postfix(loss=f"{loss.item():.4f}")
 
             if (iteration + 1) % config.snapshot_iter == 0:
                 writer.add_scalar('Loss/train', loss, 500 * epoch + iteration + 1)
                 torch.save(DCE_net.state_dict(), os.path.join(config.snapshots_folder, f"Epoch{epoch + 1}.pth"))
 
-        avg_loss = np.mean(loss_list)  # Средний лосс за эпоху
-        epoch_time = time.time() - start_time  # Время выполнения эпохи
-        speed = len(train_loader) / epoch_time  # Скорость обработки (батчи/сек)
+        avg_loss = np.mean(loss_list)
+        epoch_time = time.time() - start_time
+        speed = len(train_loader) / epoch_time
 
         print(f"Epoch {epoch + 1} completed in {epoch_time:.2f}s ({speed:.2f} batches/sec), Avg Loss: {avg_loss:.4f}")
 
