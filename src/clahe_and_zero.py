@@ -51,13 +51,18 @@ def calculate_metrics(original, enhanced):
 	return mse, psnr_val, ssim_val, entropy_val, edge_intensity, brisque_val
 
 def save_histogram(image, filename):
-	plt.figure(figsize=(6, 4))
-	plt.hist(image.flatten(), bins=256, range=(0, 256), color='blue', alpha=0.7)
-	plt.title('Histogram')
-	plt.xlabel('Pixel Value')
-	plt.ylabel('Frequency')
-	plt.savefig(filename)
-	plt.close()
+    plt.figure(figsize=(6, 4))
+    hist, bins = np.histogram(image.flatten(), bins=256, range=(0, 256))
+
+    # Убираем первый пик, зануляя первые несколько значений (например, 0-5 пикселей)
+    hist[:5] = 0  # Можно увеличить число 5, если пик широкий
+
+    plt.bar(bins[:-1], hist, width=1, color='blue', alpha=0.7)
+    plt.title('Histogram')
+    plt.xlabel('Pixel Value')
+    plt.ylabel('Frequency')
+    plt.savefig(filename)
+    plt.close()
 #endregion
 
 def process_images(input_dir, model, max_images=10):
@@ -148,16 +153,16 @@ def save_all_images(image_data_list, output_dir="results"):
 		clahe_mse, clahe_psnr, clahe_ssim, clahe_entropy, clahe_edge, clahe_brisque = image_data["clahe_metrics"]
 		zero_dce_mse, zero_dce_psnr, zero_dce_ssim, zero_dce_entropy, zero_dce_edge, zero_dce_brisque = image_data["zero_dce_metrics"]
 
-		original_filename = f"original_{idx}_{filename}"
-		clahe_filename = f"clahe_{idx}_{filename}"
-		zero_dce_filename = f"zero_dce_{idx}_{filename}"
+		original_filename = f"orig_original_{idx}_{filename}"
+		clahe_filename = f"orig_clahe_{idx}_{filename}"
+		zero_dce_filename = f"orig_zero_dce_{idx}_{filename}"
 		cv2.imwrite(os.path.join(output_dir, original_filename), original_image)
 		cv2.imwrite(os.path.join(output_dir, clahe_filename), clahe_image)
 		cv2.imwrite(os.path.join(output_dir, zero_dce_filename), zero_dce_image)
 
-		save_histogram(original_image, os.path.join(output_dir, f"hist_original_{idx}_{filename}.png"))
-		save_histogram(clahe_image, os.path.join(output_dir, f"hist_clahe_{idx}_{filename}.png"))
-		save_histogram(zero_dce_image, os.path.join(output_dir, f"hist_zero_dce_{idx}_{filename}.png"))
+		save_histogram(original_image, os.path.join(output_dir, f"orig_hist_original_{idx}_{filename}.png"))
+		save_histogram(clahe_image, os.path.join(output_dir, f"orig_hist_clahe_{idx}_{filename}.png"))
+		save_histogram(zero_dce_image, os.path.join(output_dir, f"orig_hist_zero_dce_{idx}_{filename}.png"))
 
 
 		print(f"Сохранены изображения для {filename} в папке {output_dir}:")
@@ -202,12 +207,16 @@ def generate_html_report(results, results_dir="results", report_filename="report
 			html += "<hr>\n"
 			break
 
-		orig_file = f"original_{i}_{res['filename']}"
-		clahe_file = f"clahe_{i}_{res['filename']}"
+		orig_file = f"orig_original_{i}_{res['filename']}"
+		clahe_file = f"orig_clahe_{i}_{res['filename']}"
+		orig_zero_file = f"orig_zero_dce_{i}_{res['filename']}"
 		zero_file = f"zero_dce_{i}_{res['filename']}"
-		hist_orig_file = f"hist_original_{i}_{res['filename']}.png"
-		hist_clahe_file = f"hist_clahe_{i}_{res['filename']}.png"
+
+		hist_orig_file = f"orig_hist_original_{i}_{res['filename']}.png"
+		hist_clahe_file = f"orig_hist_clahe_{i}_{res['filename']}.png"
+		orig_hist_zero_file = f"orig_hist_zero_dce_{i}_{res['filename']}.png"
 		hist_zero_file = f"hist_zero_dce_{i}_{res['filename']}.png"
+
 
 
 		html += f"<div class='section'>\n"
@@ -219,13 +228,22 @@ def generate_html_report(results, results_dir="results", report_filename="report
 		html += f"<img src='{orig_file}' alt='Оригинал'>\n"
 		html += f"<img src='{hist_orig_file}' alt='Histogram'>\n"
 		html += "</div>\n"
-		# Блок для Zero-DCE
+		# Блок для orig Zero-DCE
 		html += "<div class='image-block'>\n"
-		html += "<h3>Zero-DCE</h3>\n"
-		html += f"<img src='{zero_file}' alt='Zero-DCE'>\n"
+		html += "<h3>Orig Zero-DCE</h3>\n"
+		html += f"<img src='{orig_zero_file}' alt='Orig Zero-DCE'>\n"
+		html += f"<img src='{orig_hist_zero_file}' alt='Histogram'>\n"
+		m = res["zero_dce_metrics"]
+		html += "</div>\n"
+
+		# Блок для u-net Zero-DCE
+		html += "<div class='image-block'>\n"
+		html += "<h3>U-NET Zero-DCE</h3>\n"
+		html += f"<img src='{zero_file}' alt='U-NET Zero-DCE'>\n"
 		html += f"<img src='{hist_zero_file}' alt='Histogram'>\n"
 		m = res["zero_dce_metrics"]
 		html += "</div>\n"
+
 		# Блок для CLAHE
 		html += "<div class='image-block'>\n"
 		html += "<h3>CLAHE</h3>\n"
@@ -237,6 +255,10 @@ def generate_html_report(results, results_dir="results", report_filename="report
 		html += ("<div class='metrics'>"
 				 f"<strong>CLAHE</strong> - MSE: {m1[0]:.4f}, PSNR: {m1[1]:.4f}, SSIM: {m1[2]:.4f}, "
 				 f"Entropy: {m1[3]:.4f}, Edge Intensity: {m1[4]:.4f}, BRISQUE: {m1[5]:.4f}"
+				 "</div>\n")
+		html += ("<div class='metrics'>"
+				 f"<strong>Orig Zero-DCE</strong> - MSE: {m[0]:.4f}, PSNR: {m[1]:.4f}, SSIM: {m[2]:.4f}, "
+				 f"Entropy: {m[3]:.4f}, Edge Intensity: {m[4]:.4f}, BRISQUE: {m[5]:.4f}"
 				 "</div>\n")
 		html += ("<div class='metrics'>"
 				 f"<strong>Zero-DCE</strong> - MSE: {m[0]:.4f}, PSNR: {m[1]:.4f}, SSIM: {m[2]:.4f}, "
@@ -309,7 +331,7 @@ if __name__ == "__main__":
 						help="Путь к директории с изображениями")
 	parser.add_argument("--output_dir", type=str, default="results",
 						help="Путь для сохранения обработанных изображений")
-	parser.add_argument("--model_path", type=str, default="snapshots/Epoch49.pth", help="Путь к модели Zero-DCE")
+	parser.add_argument("--model_path", type=str, default="snapshots/Epoch50.pth", help="Путь к модели Zero-DCE")
 
 	args = parser.parse_args()
 	main(args.input_dir, args.output_dir, args.model_path)

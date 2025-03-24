@@ -51,13 +51,18 @@ def calculate_metrics(original, enhanced):
 	return mse, psnr_val, ssim_val, entropy_val, edge_intensity, brisque_val
 
 def save_histogram(image, filename):
-	plt.figure(figsize=(6, 4))
-	plt.hist(image.flatten(), bins=256, range=(0, 256), color='blue', alpha=0.7)
-	plt.title('Histogram')
-	plt.xlabel('Pixel Value')
-	plt.ylabel('Frequency')
-	plt.savefig(filename)
-	plt.close()
+    plt.figure(figsize=(6, 4))
+    hist, bins = np.histogram(image.flatten(), bins=256, range=(0, 256))
+
+    # Убираем первый пик, зануляя первые несколько значений (например, 0-5 пикселей)
+    hist[:6] = 0  # Можно увеличить число 5, если пик широкий
+
+    plt.bar(bins[:-1], hist, width=1, color='blue', alpha=0.7)
+    plt.title('Histogram')
+    plt.xlabel('Pixel Value')
+    plt.ylabel('Frequency')
+    plt.savefig(filename)
+    plt.close()
 #endregion
 
 # В функции process_images:
